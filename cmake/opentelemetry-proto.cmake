@@ -211,7 +211,7 @@ if(WITH_OTLP_GRPC)
     ${METRICS_SERVICE_GRPC_PB_CPP_FILE})
 endif()
 
-set(PROTOBUF_RUN_PROTOC_COMMAND "\"${PROTOBUF_PROTOC_EXECUTABLE}\"")
+set(PROTOBUF_RUN_PROTOC_ARGS)
 foreach(
   PROTOBUF_RUN_PROTOC_ARG
   ${PROTOBUF_COMMON_FLAGS}
@@ -224,18 +224,30 @@ foreach(
   ${TRACE_SERVICE_PROTO}
   ${LOGS_SERVICE_PROTO}
   ${METRICS_SERVICE_PROTO})
-  set(PROTOBUF_RUN_PROTOC_COMMAND
-      "${PROTOBUF_RUN_PROTOC_COMMAND} \"${PROTOBUF_RUN_PROTOC_ARG}\"")
+  set(PROTOBUF_RUN_PROTOC_ARGS
+      "${PROTOBUF_RUN_PROTOC_ARGS} \"${PROTOBUF_RUN_PROTOC_ARG}\"")
 endforeach()
 
-add_custom_command(
-  OUTPUT ${PROTOBUF_GENERATED_FILES}
-  COMMAND
-    ${PROTOBUF_PROTOC_EXECUTABLE} ${PROTOBUF_COMMON_FLAGS}
-    ${PROTOBUF_INCLUDE_FLAGS} ${COMMON_PROTO} ${RESOURCE_PROTO} ${TRACE_PROTO}
-    ${LOGS_PROTO} ${METRICS_PROTO} ${TRACE_SERVICE_PROTO} ${LOGS_SERVICE_PROTO}
-    ${METRICS_SERVICE_PROTO}
-  COMMENT "[Run]: ${PROTOBUF_RUN_PROTOC_COMMAND}")
+if(TARGET protobuf::protoc)
+  add_custom_command(
+    OUTPUT ${PROTOBUF_GENERATED_FILES}
+    COMMAND
+      protobuf::protoc ${PROTOBUF_COMMON_FLAGS} ${PROTOBUF_INCLUDE_FLAGS}
+      ${COMMON_PROTO} ${RESOURCE_PROTO} ${TRACE_PROTO} ${LOGS_PROTO}
+      ${METRICS_PROTO} ${TRACE_SERVICE_PROTO} ${LOGS_SERVICE_PROTO}
+      ${METRICS_SERVICE_PROTO}
+    COMMENT "[Run]: $<TARGET_FILE:protobuf::protoc> ${PROTOBUF_RUN_PROTOC_ARGS}"
+  )
+else()
+  add_custom_command(
+    OUTPUT ${PROTOBUF_GENERATED_FILES}
+    COMMAND
+      ${PROTOBUF_PROTOC_EXECUTABLE} ${PROTOBUF_COMMON_FLAGS}
+      ${PROTOBUF_INCLUDE_FLAGS} ${COMMON_PROTO} ${RESOURCE_PROTO} ${TRACE_PROTO}
+      ${LOGS_PROTO} ${METRICS_PROTO} ${TRACE_SERVICE_PROTO}
+      ${LOGS_SERVICE_PROTO} ${METRICS_SERVICE_PROTO}
+    COMMENT "[Run]: ${PROTOBUF_PROTOC_EXECUTABLE} ${PROTOBUF_RUN_PROTOC_ARGS}")
+endif()
 
 include_directories("${GENERATED_PROTOBUF_PATH}")
 
@@ -272,13 +284,11 @@ if(WITH_OTLP_GRPC)
     ${LOGS_SERVICE_GRPC_PB_CPP_FILE} ${METRICS_SERVICE_GRPC_PB_CPP_FILE})
 
   list(APPEND OPENTELEMETRY_PROTO_TARGETS opentelemetry_proto_grpc)
-  target_link_libraries(opentelemetry_proto_grpc
-    PUBLIC opentelemetry_proto)
+  target_link_libraries(opentelemetry_proto_grpc PUBLIC opentelemetry_proto)
 
   get_target_property(grpc_lib_type gRPC::grpc++ TYPE)
-  if (grpc_lib_type STREQUAL "SHARED_LIBRARY")
-    target_link_libraries(opentelemetry_proto_grpc
-      PUBLIC gRPC::grpc++)
+  if(grpc_lib_type STREQUAL "SHARED_LIBRARY")
+    target_link_libraries(opentelemetry_proto_grpc PUBLIC gRPC::grpc++)
   endif()
   set_target_properties(opentelemetry_proto_grpc PROPERTIES EXPORT_NAME
                                                             proto_grpc)

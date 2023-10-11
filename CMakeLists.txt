@@ -426,17 +426,20 @@ if(WITH_OTLP_GRPC OR WITH_OTLP_HTTP)
       endif()
     endif()
   endif()
-  # Latest Protobuf imported targets and without legacy module support
-  if(TARGET protobuf::protoc)
-    project_build_tools_get_imported_location(PROTOBUF_PROTOC_EXECUTABLE
-                                              protobuf::protoc)
-  elseif(Protobuf_PROTOC_EXECUTABLE)
+
+  if(Protobuf_PROTOC_EXECUTABLE)
     # Some versions of FindProtobuf.cmake uses mixed case instead of uppercase
     set(PROTOBUF_PROTOC_EXECUTABLE ${Protobuf_PROTOC_EXECUTABLE})
   endif()
+
+  # Latest Protobuf imported targets and without legacy module support
+  if(TARGET protobuf::protoc)
+    message(STATUS "Found protobuf::protoc target")
+  else()
+    message(STATUS "PROTOBUF_PROTOC_EXECUTABLE=${PROTOBUF_PROTOC_EXECUTABLE}")
+  endif()
   include(CMakeDependentOption)
 
-  message(STATUS "PROTOBUF_PROTOC_EXECUTABLE=${PROTOBUF_PROTOC_EXECUTABLE}")
   include(cmake/opentelemetry-proto.cmake)
 endif()
 
