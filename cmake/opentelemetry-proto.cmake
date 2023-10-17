@@ -260,6 +260,7 @@ add_library(
   ${TRACE_SERVICE_PB_CPP_FILE}
   ${LOGS_SERVICE_PB_CPP_FILE}
   ${METRICS_SERVICE_PB_CPP_FILE})
+target_include_directories(opentelemetry_proto INTERFACE $<BUILD_INTERFACE:${GENERATED_PROTOBUF_PATH}>)
 
 if(WITH_ABSEIL)
   target_link_libraries(opentelemetry_proto PUBLIC absl::bad_variant_access)
